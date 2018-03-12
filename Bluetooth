@@ -1,0 +1,46 @@
+//#include <LowPower.h>
+#include <LiquidCrystal.h>
+LiquidCrystal lcd(8, 7, 6, 5, 4, 3);
+String data=""; 
+boolean stringComplete = false;
+void setup() {
+  Serial.begin(9600);
+  lcd.begin(16, 2);
+  data.reserve(200);
+  pinMode(A1, OUTPUT);
+  digitalWrite(A1, LOW);
+}
+
+void loop() {
+  if (stringComplete) {
+    lcd.clear();
+    lcd.print(data);
+    if (data == "1")
+    {
+      digitalWrite(A1, HIGH);
+    }
+    else if (data == "0")
+    {
+      digitalWrite(A1, LOW);
+    }
+    data = "";
+    stringComplete = false;
+  }
+}
+void serialEvent() {
+  while (Serial.available()) {
+    char inChar = (char)Serial.read();  
+    if (inChar == ' ') {
+      break;
+    }
+    data += inChar;
+    if(data.length() > 0)
+    {
+      stringComplete = true;
+    }
+    else
+    {
+      stringComplete = false;
+    }
+  }
+}

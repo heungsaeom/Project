@@ -1,0 +1,159 @@
+//////////////////////////////////////Code truyen////////////////////////////////////////////////
+#include <LowPower.h>
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(115200);
+
+}
+void loop() {
+  // put your main code here, to run repeatedly:
+  LowPower.powerDown(SLEEP_4S, ADC_OFF, BOD_OFF);
+  Serial.print("Node2,");
+  Serial.print(random(23,30));
+  Serial.print(",");
+  Serial.print(random(60,80));
+  Serial.print(",");
+  Serial.print(random(70,90));
+  Serial.print(",");
+  Serial.print(random(10,20));
+  Serial.print("#");
+  delay(1000);
+}
+
+//////////////////////////////////////Code nhan////////////////////////////////////////////////
+//#include <LowPower.h>
+#include <LiquidCrystal.h>
+#include <SimpleTimer.h>
+SimpleTimer timer;
+LiquidCrystal lcd(8, 7, 6, 5, 4, 3);
+String data = "";
+char data1[30];
+boolean stringComplete = false;
+
+int nhietdo1 = 0;
+int doam1 = 0;
+int apsuat1 = 0;
+int kiemtra1 = 0;
+int khigas1 = 0;
+int dem1 = 0;
+
+int nhietdo2 = 0;
+int doam2 = 0;
+int apsuat2 = 0;
+int kiemtra2 = 0;
+int khigas2 = 0;
+int dem2 = 0;
+int i = 0;
+void setup()
+{
+  Serial.begin(115200);
+  lcd.begin(16, 2);
+  data.reserve(200);
+  lcd.setCursor(0, 0);
+  lcd.print("Node 1:OFF");
+  lcd.setCursor(0, 1);
+  lcd.print("Node 2:OFF");
+  startTimers();
+}
+
+void loop()
+{
+  timer.run();
+}
+void serialEvent()
+{
+  while (Serial.available())
+  {
+    char inChar = (char)Serial.read();
+    data += inChar;
+    if (inChar == '#')
+    {
+      if (data.length() == 18)
+      {
+        if (data.indexOf("Node1") < 0)
+        {
+          dem1 ++;
+        }
+        else
+        {
+          dem1 = 0;
+        }
+        if (data.indexOf("Node2") < 0)
+        {
+          dem2 ++;
+        }
+        else
+        {
+          dem2 = 0;
+        }
+        stringComplete = true;
+      }
+      else
+      {
+        stringComplete = false;
+        data = "";
+      }
+    }
+  }
+}
+
+void startTimers(void)
+{
+  timer.setInterval(500, nhandulieu);
+  timer.setInterval(1000, doctrangthai);
+}
+
+void nhandulieu()
+{
+  if (stringComplete)
+  {
+    data.toCharArray(data1, data.length() + 1);
+    delay(500);
+    kiemtra1 = sscanf(data1, "Node1,%d,%d,%d,%d", &nhietdo1, &doam1, &apsuat1, &khigas1);
+    kiemtra2 = sscanf(data1, "Node2,%d,%d,%d,%d", &nhietdo2, &doam2, &apsuat2, &khigas2);
+    if (kiemtra1 == 4)
+    {
+      dem1 = 0;
+      lcd.setCursor(0, 0);
+      lcd.print(nhietdo1);
+      lcd.print("-");
+      lcd.print(doam1);
+      lcd.print("-");
+      lcd.print(apsuat1);
+      lcd.print("-");
+      lcd.print(khigas1);
+      memset( data1, 0, sizeof(data1));
+    }
+    if (kiemtra2 == 4)
+    {
+      dem2 = 0;
+      lcd.setCursor(0, 1);
+      lcd.print(nhietdo2);
+      lcd.print("-");
+      lcd.print(doam2);
+      lcd.print("-");
+      lcd.print(apsuat2);
+      lcd.print("-");
+      lcd.print(khigas2);
+      memset( data1, 0, sizeof(data1));
+    }
+    stringComplete = false;
+    data = "";
+  }
+}
+
+void doctrangthai()
+{
+  if (dem1 == 2)
+  {
+    lcd.setCursor(0, 0);
+    lcd.print("Node 1:OFF      ");
+    dem1 = 0;
+  }
+  if (dem2 == 2)
+  {
+    lcd.setCursor(0, 1);
+    lcd.print("Node 2:OFF      ");
+    dem2 = 0;
+  }
+}

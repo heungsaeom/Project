@@ -1,0 +1,75 @@
+#include <ESP8266WiFi.h>
+#include <ESP8266HTTPClient.h>
+WiFiClient client;
+HTTPClient http;
+String led1;
+String led;
+String trangthai="http://192.168.0.106/json/update.php";
+void setup()
+{
+  Serial.begin(9600);
+  pinMode(D4, OUTPUT);
+  pinMode(D5, OUTPUT);
+  ESP.wdtDisable();
+  ESP.wdtEnable(10000) ;
+  WiFi.begin("Fernando Torres", "thuhang90");
+  while ((!(WiFi.status() == WL_CONNECTED))) {
+    delay(300);
+  }
+  Serial.println((WiFi.localIP()));
+
+}
+
+void updata()
+{
+  http.begin("http://192.168.0.106/json/read.php");  //Specify request destination
+  int httpCode = http.GET();                                                                  //Send the request
+
+  if (httpCode > 0) { //Check the returning code
+
+    String payload = http.getString();   //Get the request response payload
+    if (payload.indexOf("on1") >= 0)
+    {
+      digitalWrite(D4, HIGH);
+    }
+    else if (payload.indexOf("off1") >= 0)
+    {
+      digitalWrite(D4, LOW);
+    }
+    if (payload.indexOf("on2") >= 0)
+    {
+      digitalWrite(D5, HIGH);
+    }
+    else if (payload.indexOf("off2") >= 0)
+    {
+      digitalWrite(D5, LOW);
+    }
+
+  }
+  http.end();
+
+}
+void truyentrangthai()
+{
+    trangthai+="?led1=";
+    trangthai+=digitalRead(D4);
+    trangthai+="&led2=";
+    trangthai+=digitalRead(D5);
+    http.begin(trangthai);  //Specify request destination
+    while(http.GET()>0)
+    {
+      http.end();
+      break;
+    }
+}
+void loop()
+{
+  ESP.wdtFeed();
+  if (WiFi.status () == WL_CONNECTED)
+  {
+    truyentrangthai();
+    updata();
+    yield();
+  }
+  delay(1000);
+}

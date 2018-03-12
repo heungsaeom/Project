@@ -1,0 +1,50 @@
+//////////////////////////////Code nhan//////////////////////////////////////////
+#include <RCSwitch.h>
+#define ledPin 13 
+RCSwitch mySwitch = RCSwitch(); 
+#define nutA 5592512
+#define nutB 5592368
+#define nutC 5592332
+#define nutD 5592323
+void setup() {
+  Serial.begin(9600); 
+  mySwitch.enableReceive(0);  // Nhận dữ liệu ở ngắt 0, Digital Pin số 2  
+  pinMode(ledPin, OUTPUT);
+}
+ 
+void loop() {
+  if (mySwitch.available()) {
+    unsigned long signalRF = mySwitch.getReceivedValue();
+    Serial.print(signalRF);
+    switch (signalRF) {
+      case 5592512: // Nếu nhấn button A, bật Led
+        digitalWrite(ledPin, HIGH);
+        break;
+      case 5592368: // Nếu nhấn button B, tắt Led
+        digitalWrite(ledPin, LOW);
+        break;    
+    }   
+    mySwitch.resetAvailable();
+  }
+}
+
+//////////////////////////////Code truyen//////////////////////////////////////////
+#include <RCSwitch.h>
+ 
+RCSwitch mySwitch = RCSwitch();
+ 
+void setup() {
+ 
+  Serial.begin(9600);  
+  // Khai báo chân phát tín hiệu là chân số 13  
+  mySwitch.enableTransmit(13);  
+}
+ 
+void loop() {
+  // Gởi tín hiệu dưới dạng mã thập phân (giả định đây là tín hiệu ON)
+  mySwitch.send(5592512, 24);  
+  delay(5000); // Tạm dừng 5 giây
+  // Gởi tín hiệu dưới dạng mã thập phân (giả định đây là tín hiệu OFF)
+  mySwitch.send(5592368, 24);
+  delay(5000); // Tạm dừng 5 giây 
+}

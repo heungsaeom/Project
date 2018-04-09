@@ -1,0 +1,427 @@
+#include <ESP8266WiFi.h>
+#include <DNSServer.h>
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+LiquidCrystal_I2C lcd(0x27, 20, 4);
+#include <ESP8266WebServer.h>
+#include <WiFiManager.h>
+#include <FirebaseArduino.h>
+#define FIREBASE_HOST "thongtin-31609.firebaseio.com"
+#define FIREBASE_AUTH "dngAlgLRvLwUkfwluhnQYxZ3mZJGPTM5xPELWOa3"
+const char* ssid = "SmartElnino";
+const char* password = "17121996";
+char giatrinhietdo1[5];
+char giatridoamkk1[5];
+char giatridoamdat1[5];
+char giatrinhietdo2[5];
+char giatridoamkk2[5];
+char giatridoamdat2[5];
+char giatrinhietdo3[5];
+char giatridoamkk3[5];
+char giatridoamdat3[5];
+
+byte temperature[] = {
+  B00100,
+  B01010,
+  B01010,
+  B01110,
+  B01110,
+  B11111,
+  B11111,
+  B01110
+};
+byte humidity2[] = {
+  B00100,
+  B00100,
+  B01010,
+  B01010,
+  B10001,
+  B10001,
+  B10001,
+  B01110
+};
+byte nhiet[] = {
+  B00110,
+  B01001,
+  B01001,
+  B00110,
+  B00000,
+  B00000,
+  B00000,
+  B00000
+};
+byte doamda[] = {
+  B00100,
+  B00100,
+  B01110,
+  B01110,
+  B11111,
+  B11111,
+  B11111,
+  B01110
+};
+byte node[] = {
+  B01110,
+  B11011,
+  B10001,
+  B10001,
+  B10001,
+  B11111,
+  B01010,
+  B01010
+};
+String data = "";
+char data1[30];
+boolean stringComplete = false;
+
+int nhietdo1 = 0;
+int doamkhongkhi1 = 0;
+int doamdat1 = 0;
+int kiemtra1 = 0;
+int dem1 = 21;
+
+int nhietdo2 = 0;
+int doamkhongkhi2 = 0;
+int doamdat2 = 0;
+int kiemtra2 = 0;
+int dem2 = 21;
+
+int nhietdo3 = 0;
+int doamkhongkhi3 = 0;
+int doamdat3 = 0;
+int kiemtra3 = 0;
+int dem3 = 21;
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  lcd.begin();
+  //  lcd.init();
+  lcd.createChar(0, temperature);
+  lcd.createChar(1, humidity2);
+  lcd.createChar(2, nhiet);
+  lcd.createChar(3, doamda);
+  lcd.createChar(4, node);
+  lcd.backlight();
+  lcd.setCursor(6, 0);
+  lcd.print("GATEWAY");
+  //  WiFiManager wifiManager;
+  //  wifiManager.autoConnect("Wireless Sensor Network");
+  WiFi.begin(ssid, password);
+  delay(500);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    lcd.setCursor(0, 1);
+    lcd.print(" Connecting Wifi... ");
+  }
+  lcd.setCursor(0, 1);
+  lcd.print("Ket noi thanh cong !");
+  lcd.setCursor(0, 2);
+  lcd.print("IP:");
+  lcd.print(WiFi.localIP());
+  delay(2000);
+  lcd.clear();
+  lcd.setCursor(6, 0);
+  lcd.print("GATEWAY");
+  lcd.setCursor(0, 1);
+  lcd.write(4);
+  lcd.print("1:");
+  lcd.setCursor(4, 1);
+  lcd.print("      OFF       ");
+  lcd.setCursor(0, 2);
+  lcd.write(4);
+  lcd.print("2:");
+  lcd.setCursor(4, 2);
+  lcd.print("      OFF       ");
+  lcd.setCursor(0, 3);
+  lcd.write(4);
+  lcd.print("3:");
+  lcd.setCursor(4, 3);
+  lcd.print("      OFF       ");
+  Firebase.begin(FIREBASE_HOST, FIREBASE_AUTH);
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  while (Serial.available())
+  {
+    char inChar = (char)Serial.read();
+    data += inChar;
+    if (inChar == '#' && data.length() == 12 )
+    {
+      Serial.println(data);
+      stringComplete = true;
+      break;
+    }
+  }
+  if (data.length() == 12 )
+  {
+    nhandulieu();
+  }
+  else
+  {
+    dem1 ++;
+    dem2 ++;
+    dem3 ++;
+  }
+  hienthi();
+  data = "";
+  delay(300);
+}
+
+void nhandulieu()
+{
+  if (stringComplete)
+  {
+    data.toCharArray(data1, data.length() + 1);
+    delay(500);
+    kiemtra1 = sscanf(data1, "N1,%d,%d,%d#", &nhietdo1, &doamkhongkhi1, &doamdat1);
+    kiemtra2 = sscanf(data1, "N2,%d,%d,%d#", &nhietdo2, &doamkhongkhi2, &doamdat2);
+    kiemtra3 = sscanf(data1, "N3,%d,%d,%d#", &nhietdo3, &doamkhongkhi3,  &doamdat3);
+    if (kiemtra1 == 3)
+    {
+      dem1 = 0;
+      sprintf(giatrinhietdo1, "%d", nhietdo1);
+      sprintf(giatridoamkk1, "%d", doamkhongkhi1);
+      sprintf(giatridoamdat1, "%d", doamdat1);
+
+      Firebase.setString("Node1/NhietDo", giatrinhietdo1);
+      Firebase.setString("Node1/DoAmKhongKhi", giatridoamkk1);
+      Firebase.setString("Node1/DoAmDat", giatridoamdat1);
+      memset( data1, 0, sizeof(data1));
+    }
+    else
+    {
+      dem1 ++;
+      if (dem1 == 100)
+      {
+        dem1 = 21;
+      }
+    }
+    if (kiemtra2 == 3)
+    {
+      dem2 = 0;
+      sprintf(giatrinhietdo2, "%d", nhietdo2);
+      sprintf(giatridoamkk2, "%d", doamkhongkhi2);
+      sprintf(giatridoamdat2, "%d", doamdat2);
+      Firebase.setString("Node2/NhietDo", giatrinhietdo2);
+      Firebase.setString("Node2/DoAmKhongKhi", giatridoamkk2);
+      Firebase.setString("Node2/DoAmDat", giatridoamdat2);
+      memset( data1, 0, sizeof(data1));
+    }
+    else
+    {
+      dem2 ++;
+      if (dem2 == 100)
+      {
+        dem2 = 21;
+      }
+    }
+    if (kiemtra3 == 3)
+    {
+      dem3 = 0;
+      sprintf(giatrinhietdo3, "%d", nhietdo3);
+      sprintf(giatridoamkk3, "%d", doamkhongkhi3);
+      sprintf(giatridoamdat3, "%d", doamdat3);
+      Firebase.setString("Node3/NhietDo", giatrinhietdo3);
+      Firebase.setString("Node3/DoAmKhongKhi", giatridoamkk3);
+      Firebase.setString("Node3/DoAmDat", giatridoamdat3);
+      memset( data1, 0, sizeof(data1));
+    }
+    else
+    {
+      dem3 ++;
+      if (dem3 == 100)
+      {
+        dem3 = 21;
+      }
+    }
+    stringComplete = false;
+    data = "";
+  }
+}
+void hienthi()
+{
+  if (dem1 > 20)
+  {
+    lcd.setCursor(4, 1);
+    lcd.print("      OFF       ");
+  }
+  else
+  {
+    lcd.setCursor(4, 1);
+    lcd.print("                ");
+    lcd.setCursor(4, 1);
+    lcd.write(0);
+    lcd.print(giatrinhietdo1);
+    lcd.write(2);
+    lcd.print("C ");
+
+    lcd.write(1);
+    lcd.print(giatridoamkk1);
+    lcd.print("% ");
+
+    lcd.write(3);
+    lcd.print(giatridoamdat1);
+    lcd.print("% ");
+
+//    dieukhienNode1();
+  }
+
+  if (dem2 > 20)
+  {
+    lcd.setCursor(4, 2);
+    lcd.print("      OFF       ");
+  }
+  else
+  {
+    lcd.setCursor(4, 2);
+    lcd.print("                ");
+    lcd.setCursor(4, 2);
+    lcd.write(0);
+    lcd.print(giatrinhietdo2);
+    lcd.write(2);
+    lcd.print("C ");
+
+    lcd.write(1);
+    lcd.print(giatridoamkk2);
+    lcd.print("% ");
+
+    lcd.write(3);
+    lcd.print(giatridoamdat2);
+    lcd.print("% ");
+
+//    dieukhienNode2();
+  }
+
+  if (dem3 > 20)
+  {
+    lcd.setCursor(4, 3);
+    lcd.print("      OFF       ");
+  }
+  else
+  {
+    lcd.setCursor(4, 3);
+    lcd.print("                ");
+    lcd.setCursor(4, 3);
+    lcd.write(0);
+    lcd.print(giatrinhietdo3);
+    lcd.write(2);
+    lcd.print("C ");
+
+    lcd.write(1);
+    lcd.print(giatridoamkk3);
+    lcd.print("% ");
+
+    lcd.write(3);
+    lcd.print(giatridoamdat3);
+    lcd.print("% ");
+
+//    dieukhienNode3();
+  }
+}
+
+void dieukhienNode1()
+{
+  String Node1_Relay1 = Firebase.getString("Node1/Relay1");
+  String Node1_Relay2 = Firebase.getString("Node1/Relay2");
+  String Node1_Relay3 = Firebase.getString("Node1/Relay3");
+  String Node1_Relay4 = Firebase.getString("Node1/Relay4");
+  if (Node1_Relay1.toInt() == 1)
+  {
+    Serial.println("Node1TB1#");
+    Firebase.setString("Node1/Relay1", "0");
+    delay(100);
+  }
+  if (Node1_Relay2.toInt() == 1)
+  {
+    Serial.println("Node1TB2#");
+    Firebase.setString("Node1/Relay2", "0");
+    delay(100);
+  }
+  if (Node1_Relay3.toInt() == 1)
+  {
+    Serial.println("Node1TB3#");
+    Firebase.setString("Node1/Relay3", "0");
+    delay(100);
+  }
+  if (Node1_Relay4.toInt() == 1)
+  {
+    Serial.println("Node1TB4#");
+    Firebase.setString("Node1/Relay4", "0");
+    delay(100);
+  }
+  Node1_Relay1 = "";
+  Node1_Relay2 = "";
+  Node1_Relay3 = "";
+  Node1_Relay4 = "";
+}
+void dieukhienNode2()
+{
+  String Node2_Relay1 = Firebase.getString("Node2/Relay1");
+  String Node2_Relay2 = Firebase.getString("Node2/Relay2");
+  String Node2_Relay3 = Firebase.getString("Node2/Relay3");
+  String Node2_Relay4 = Firebase.getString("Node2/Relay4");
+  if (Node2_Relay1.toInt() == 1)
+  {
+    Serial.println("Node2TB1#");
+    Firebase.setString("Node2/Relay1", "0");
+    delay(100);
+  }
+  if (Node2_Relay2.toInt() == 1)
+  {
+    Serial.println("Node2TB2#");
+    Firebase.setString("Node2/Relay2", "0");
+    delay(100);
+  }
+  if (Node2_Relay3.toInt() == 1)
+  {
+    Serial.println("Node2TB3#");
+    Firebase.setString("Node2/Relay3", "0");
+    delay(100);
+  }
+  if (Node2_Relay4.toInt() == 1)
+  {
+    Serial.println("Node2TB4#");
+    Firebase.setString("Node2/Relay4", "0");
+    delay(100);
+  }
+  Node2_Relay1 = "";
+  Node2_Relay2 = "";
+  Node2_Relay3 = "";
+  Node2_Relay4 = "";
+}
+void dieukhienNode3()
+{
+  String Node3_Relay1 = Firebase.getString("Node2/Relay1");
+  String Node3_Relay2 = Firebase.getString("Node2/Relay2");
+  String Node3_Relay3 = Firebase.getString("Node2/Relay3");
+  String Node3_Relay4 = Firebase.getString("Node2/Relay4");
+  if (Node3_Relay1.toInt() == 1)
+  {
+    Serial.println("Node3TB1#");
+    Firebase.setString("Node3/Relay1", "0");
+    delay(100);
+  }
+  if (Node3_Relay2.toInt() == 1)
+  {
+    Serial.println("Node3TB2#");
+    Firebase.setString("Node3/Relay2", "0");
+    delay(100);
+  }
+  if (Node3_Relay3.toInt() == 1)
+  {
+    Serial.println("Node3TB3#");
+    Firebase.setString("Node3/Relay3", "0");
+    delay(100);
+  }
+  if (Node3_Relay4.toInt() == 1)
+  {
+    Serial.println("Node3TB4#");
+    Firebase.setString("Node3/Relay4", "0");
+    delay(100);
+  }
+  Node3_Relay1 = "";
+  Node3_Relay2 = "";
+  Node3_Relay3 = "";
+  Node3_Relay4 = "";
+}
